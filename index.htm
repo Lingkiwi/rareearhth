@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>稀土舆情地球</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #globeViz { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="globeViz"></div>
+
+  <!-- 引入 Three.js 和 Globe.gl -->
+  <script src="https://unpkg.com/three@0.124.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl"></script>
+
+  <script>
+    // 初始化地球
+    const world = Globe()
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .pointsData([])
+      .pointAltitude(0.02)
+      .pointColor(() => 'red')
+      .pointLabel(p => p.title)
+      .onPointClick(p => window.open(p.url, '_blank'));
+
+    document.getElementById('globeViz').appendChild(world());
+
+    // 从 GDELT GEO API 获取数据
+    fetch('https://api.gdeltproject.org/api/v2/geo/geo?query=rare+earth&format=JSON')
+      .then(res => res.json())
+      .then(json => {
+        const data = json.features.map(f => ({
+          lat: f.geometry.coordinates[1],
+          lng: f.geometry.coordinates[0],
+          value: Math.abs(f.properties.tone || 1),
+          title: f.properties.title || '无标题',
+          url: f.properties.url || ''
+        }));
+        world.pointsData(data);
+      })
+      .catch(err => console.error('GDELT 数据加载失败:', err));
+  </script>
+</body>
+</html>
